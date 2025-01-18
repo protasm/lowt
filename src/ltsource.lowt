@@ -1,0 +1,11 @@
+int x = 99;
+
+void foo() {
+  print("hello");
+}
+
+int bar(string s) {
+  s = "bar";
+  return 99;
+}
+
