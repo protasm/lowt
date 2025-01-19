@@ -1,12 +1,14 @@
 package ast;
 
-public abstract class ASTStatement extends ASTNode {
-    // Constructor
-    public ASTStatement(int line, int column) {
-        super(line, column);
-    }
+import scanner.Token;
 
-    // Abstract method for specific statement details
-    @Override
-    public abstract String toString();
+public abstract class ASTStatement extends ASTNode {
+	// Constructor
+	public ASTStatement(Token token) {
+		super(token);
+	}
+
+	// Abstract method for specific statement details
+	@Override
+	public abstract String toString();
 }

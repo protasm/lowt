@@ -1,14 +1,16 @@
 package ast;
 
-public class ASTExprNull extends ASTExpression {
-    // Constructor
-    public ASTExprNull(int line, int column) {
-        super(line, column);
-    }
+import scanner.Token;
 
-    // String representation for debugging
-    @Override
-    public String toString() {
-        return String.format("ASTExprNull(line=%d, column=%d)", line(), column());
-    }
+public class ASTExprNull extends ASTExpression {
+	// Constructor
+	public ASTExprNull(Token token) {
+		super(token);
+	}
+
+	// String representation for debugging
+	@Override
+	public String toString() {
+		return "ASTExprNull";
+	}
 }

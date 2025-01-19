@@ -1,11 +1,11 @@
 int x = 99;
+string s = "hello, world!";
 
 void foo() {
-  print("hello");
+  return;
 }
 
 int bar(string s) {
-  s = "bar";
   return 99;
 }
 

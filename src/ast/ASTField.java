@@ -1,35 +1,38 @@
 package ast;
 
 import common.LTType;
+import scanner.Token;
 
-public class ASTField {
-    private final LTType type;           // The data type of the field
-    private final String name;           // The name of the field
-    private final ASTExpression initializer; // Optional initializer for the field
+public class ASTField extends ASTNode {
+	private final LTType type; // The data type of the field
+	private final String name; // The name of the field
+	private final ASTExpression initializer; // Optional initializer for the field
 
-    // Constructor
-    public ASTField(LTType type, String name, ASTExpression initializer) {
-        this.type = type;
-        this.name = name;
-        this.initializer = initializer;
-    }
+	// Constructor
+	public ASTField(Token typeToken, Token nameToken, ASTExpression initializer) {
+		super(typeToken);
 
-    // Accessors
-    public LTType type() {
-        return type;
-    }
+		this.type = typeToken.type().toLTType();
+		this.name = nameToken.lexeme();
+		this.initializer = initializer;
+	}
 
-    public String name() {
-        return name;
-    }
+	// Accessors
+	public LTType type() {
+		return type;
+	}
 
-    public ASTExpression initializer() {
-        return initializer;
-    }
+	public String name() {
+		return name;
+	}
 
-    // String representation for debugging
-    @Override
-    public String toString() {
-        return String.format("ASTField(type=%s, name=%s, initializer=%s)", type, name, initializer);
-    }
+	public ASTExpression initializer() {
+		return initializer;
+	}
+
+	// String representation for debugging
+	@Override
+	public String toString() {
+		return String.format("ASTField(type=%s, name=%s, initializer=%s", type, name, initializer);
+	}
 }

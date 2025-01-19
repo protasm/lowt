@@ -2,30 +2,33 @@ package ast;
 
 import java.util.List;
 
+import scanner.Token;
+
 public class ASTStmtBlock extends ASTStatement {
-    private final List<ASTStatement> statements; // The list of statements in the block
+	private final List<ASTStatement> statements; // The list of statements in the block
 
-    // Constructor
-    public ASTStmtBlock(int line, int column, List<ASTStatement> statements) {
-        super(line, column);
-        this.statements = statements;
-    }
+	// Constructor
+	public ASTStmtBlock(Token token, List<ASTStatement> statements) {
+		super(token);
 
-    // Accessor
-    public List<ASTStatement> statements() {
-        return statements;
-    }
+		this.statements = statements;
+	}
 
-    // String representation for debugging
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        
-        sb.append(String.format("ASTStmtBlock(line=%d, column=%d)\n", line(), column()));
-        
-        for (ASTStatement stmt : statements)
-            sb.append("  ").append(stmt).append("\n");
+	// Accessor
+	public List<ASTStatement> statements() {
+		return statements;
+	}
 
-        return sb.toString().trim();
-    }
+	// String representation for debugging
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("ASTStmtBlock\n");
+
+		for (ASTStatement stmt : statements)
+			sb.append(stmt).append("\n");
+
+		return sb.toString().trim();
+	}
 }

@@ -24,10 +24,12 @@ public class Scanner implements Iterator<Token> {
 	public List<Token> scan() {
 		while (!isAtEnd()) {
 			start = current;
+			
 			scanToken();
 		}
 
 		tokens.add(new Token(TokenType.T_EOF, "", null, line, current));
+
 		return tokens;
 	}
 
@@ -144,24 +146,26 @@ public class Scanner implements Iterator<Token> {
 	}
 
 	private void scanString() {
-	    StringBuilder value = new StringBuilder();
+		StringBuilder value = new StringBuilder();
 
-	    // Collect characters until the closing quote or end of file
-	    while (!isAtEnd() && peek() != '"') {
-	        if (peek() == '\n') line++; // Handle multi-line strings by tracking newlines
-	        value.append(advance());
-	    }
+		// Collect characters until the closing quote or end of file
+		while (!isAtEnd() && peek() != '"') {
+			if (peek() == '\n')
+				line++; // Handle multi-line strings by tracking newlines
+			
+			value.append(advance());
+		}
 
-	    // Check for a closing quote
-	    if (isAtEnd()) {
-	        throw new IllegalArgumentException("Unterminated string literal at line " + line);
-	    }
+		// Check for a closing quote
+		if (isAtEnd()) {
+			throw new IllegalArgumentException("Unterminated string literal at line " + line);
+		}
 
-	    // Consume the closing quote
-	    advance();
+		// Consume the closing quote
+		advance();
 
-	    // Add the string token
-	    addToken(TokenType.T_STRING_LITERAL, value.toString());
+		// Add the string token
+		addToken(TokenType.T_STRING_LITERAL, value.toString());
 	}
 
 	// Get token type for a keyword
@@ -179,6 +183,8 @@ public class Scanner implements Iterator<Token> {
 				return TokenType.T_INHERIT;
 			case "null":
 				return TokenType.T_NULL;
+			case "return":
+				return TokenType.T_RETURN;
 			default:
 				return null;
 		}
@@ -208,54 +214,54 @@ public class Scanner implements Iterator<Token> {
 	private boolean isAtEnd() {
 		return current >= source.length();
 	}
-	
+
 	public static void main(String[] args) {
-	    if (args.length != 1) {
-	        System.err.println("Usage: java Scanner <file>");
-	        System.exit(1);
-	    }
+		if (args.length != 1) {
+			System.err.println("Usage: java Scanner <file>");
+			
+			System.exit(1);
+		}
 
-	    String fileName = args[0];
-	    Path filePath = Paths.get(fileName);
+		String fileName = args[0];
+		Path filePath = Paths.get(fileName);
+		String source;
+		
+		try {
+			source = Files.readString(filePath);
+		} catch (IOException e) {
+			System.err.println("Error: Unable to locate or read file '" + fileName + "'");
+			System.exit(1);
+			return; // Unreachable, but included for clarity
+		}
 
-	    // Try to read the file
-	    String source;
-	    try {
-	        source = Files.readString(filePath);
-	    } catch (IOException e) {
-	        System.err.println("Error: Unable to locate or read file '" + fileName + "'");
-	        System.exit(1);
-	        return; // Unreachable, but included for clarity
-	    }
+		// Create a Scanner and scan the tokens
+		Scanner scanner = new Scanner(source);
+		List<Token> tokens = scanner.scan();
 
-	    // Create a Scanner and scan the tokens
-	    Scanner scanner = new Scanner(source);
-	    List<Token> tokens = scanner.scan();
+		// Print tokens grouped by lines
+		int currentLine = -1;
+		StringBuilder lineBuffer = new StringBuilder();
 
-	    // Print tokens grouped by lines
-	    int currentLine = -1;
-	    StringBuilder lineBuffer = new StringBuilder();
+		for (Token token : tokens) {
+			// Check if we're starting a new line
+			if (token.line() != currentLine) {
+				// Print the buffered line if moving to a new line
+				if (lineBuffer.length() > 0) {
+					System.out.println(lineBuffer.toString());
+					lineBuffer.setLength(0); // Clear the buffer
+				}
 
-	    for (Token token : tokens) {
-	        // Check if we're starting a new line
-	        if (token.line() != currentLine) {
-	            // Print the buffered line if moving to a new line
-	            if (lineBuffer.length() > 0) {
-	                System.out.println(lineBuffer.toString());
-	                lineBuffer.setLength(0); // Clear the buffer
-	            }
+				// Update current line
+				currentLine = token.line();
+			}
 
-	            // Update current line
-	            currentLine = token.line();
-	        }
+			// Append the token to the current line
+			lineBuffer.append(token).append(" ");
+		}
 
-	        // Append the token to the current line
-	        lineBuffer.append(token).append(" ");
-	    }
-
-	    // Print the final line if there's anything left in the buffer
-	    if (lineBuffer.length() > 0) {
-	        System.out.println(lineBuffer.toString());
-	    }
+		// Print the final line if there's anything left in the buffer
+		if (lineBuffer.length() > 0) {
+			System.out.println(lineBuffer.toString());
+		}
 	}
 }
