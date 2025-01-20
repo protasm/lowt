@@ -1,27 +1,26 @@
 package ast;
 
+import org.objectweb.asm.MethodVisitor;
+
+import ast.stmt.ASTStmtBlock;
 import common.LTType;
 import scanner.Token;
 
-import java.util.List;
-
 public class ASTMethod extends ASTNode {
-	private final LTType returnType; // The return type of the method
-	private final String name; // The name of the method
-	private final List<ASTParameter> parameters; // The list of parameters
-	private final ASTStmtBlock body; // The list of statements in the method body
+	private final LTType returnType;
+	private final String name;
+	private final ASTParameters parameters;
+	private final ASTStmtBlock body;
 
-	// Constructor
-	public ASTMethod(Token typeToken, Token nameToken, List<ASTParameter> parameters, ASTStmtBlock body) {
-		super(typeToken);
-		
-		this.returnType = typeToken.type().toLTType();
+	public ASTMethod(Token startToken, Token nameToken, ASTParameters parameters, ASTStmtBlock body) {
+		super(startToken);
+
+		this.returnType = startToken.type().toLTType();
 		this.name = nameToken.lexeme();
 		this.parameters = parameters;
 		this.body = body;
 	}
 
-	// Accessors
 	public LTType returnType() {
 		return returnType;
 	}
@@ -30,7 +29,7 @@ public class ASTMethod extends ASTNode {
 		return name;
 	}
 
-	public List<ASTParameter> parameters() {
+	public ASTParameters parameters() {
 		return parameters;
 	}
 
@@ -38,7 +37,11 @@ public class ASTMethod extends ASTNode {
 		return body;
 	}
 
-	// String representation for debugging
+	@Override
+	public void toBytecode(MethodVisitor mv) {
+		body.toBytecode(mv);
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -47,13 +50,12 @@ public class ASTMethod extends ASTNode {
 
 		sb.append("Parameters:\n");
 
-		for (ASTParameter param : parameters)
-			sb.append("  ").append(param).append("\n");
+		sb.append(parameters);
 
 		sb.append("Body:\n");
 
 		sb.append(body);
-		
+
 		return sb.toString().trim();
 	}
 }

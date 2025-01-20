@@ -1,13 +1,14 @@
-package ast;
+package ast.stmt;
 
+import ast.expr.ASTExpression;
 import scanner.Token;
 
 public class ASTStmtExpressionStatement extends ASTStatement {
 	private final ASTExpression expression;
 
-	public ASTStmtExpressionStatement(Token token, ASTExpression expression) {
-		super(token);
-		
+	public ASTStmtExpressionStatement(Token startToken, ASTExpression expression) {
+		super(startToken);
+
 		this.expression = expression;
 	}
 

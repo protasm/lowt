@@ -1,20 +1,19 @@
-package ast;
+package ast.stmt;
 
+import ast.expr.ASTExpression;
 import scanner.Token;
 
 public class ASTStmtAssignment extends ASTStatement {
-	private final String variable; // The variable being assigned to
-	private final ASTExpression value; // The value being assigned to the variable
+	private final String variable;
+	private final ASTExpression value;
 
-	// Constructor
-	public ASTStmtAssignment(Token token, String variable, ASTExpression value) {
-		super(token);
-		
+	public ASTStmtAssignment(Token startToken, String variable, ASTExpression value) {
+		super(startToken);
+
 		this.variable = variable;
 		this.value = value;
 	}
 
-	// Accessors
 	public String variable() {
 		return variable;
 	}
@@ -23,7 +22,6 @@ public class ASTStmtAssignment extends ASTStatement {
 		return value;
 	}
 
-	// String representation for debugging
 	@Override
 	public String toString() {
 		return String.format("ASTStmtAssignment(variable=%s, value=%s)", variable, value);

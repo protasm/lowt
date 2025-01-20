@@ -1,8 +1,11 @@
 package scanner;
 
-import common.LTType;
+import static common.LTType.LT_INT;
+import static common.LTType.LT_OBJECT;
+import static common.LTType.LT_STRING;
+import static common.LTType.LT_VOID;
 
-import static common.LTType.*;
+import common.LTType;
 
 public enum TokenType {
 	// Types

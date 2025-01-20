@@ -4,13 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public class Scanner implements Iterator<Token> {
 	private final String source;
-	private final List<Token> tokens = new ArrayList<>();
+	private final TokenList tokens;
 	private int start = 0; // Start of the current lexeme
 	private int current = 0; // Current position in the source string
 	private int line = 1; // Current line in the source string
@@ -18,13 +16,14 @@ public class Scanner implements Iterator<Token> {
 	// Constructor
 	public Scanner(String source) {
 		this.source = source;
+		this.tokens = new TokenList();
 	}
 
 	// Main entry point to scan all tokens
-	public List<Token> scan() {
+	public TokenList scan() {
 		while (!isAtEnd()) {
 			start = current;
-			
+
 			scanToken();
 		}
 
@@ -127,8 +126,9 @@ public class Scanner implements Iterator<Token> {
 
 	// Scan a number literal
 	private void scanNumber() {
-		while (isDigit(peek()))
+		while (isDigit(peek())) {
 			advance();
+		}
 
 		// Add the number token
 		String lexeme = source.substring(start, current);
@@ -137,8 +137,9 @@ public class Scanner implements Iterator<Token> {
 
 	// Scan an identifier or keyword
 	private void scanIdentifier() {
-		while (isAlphaNumeric(peek()))
+		while (isAlphaNumeric(peek())) {
 			advance();
+		}
 
 		String lexeme = source.substring(start, current);
 		TokenType type = getKeywordType(lexeme);
@@ -150,9 +151,10 @@ public class Scanner implements Iterator<Token> {
 
 		// Collect characters until the closing quote or end of file
 		while (!isAtEnd() && peek() != '"') {
-			if (peek() == '\n')
+			if (peek() == '\n') {
 				line++; // Handle multi-line strings by tracking newlines
-			
+			}
+
 			value.append(advance());
 		}
 
@@ -218,14 +220,14 @@ public class Scanner implements Iterator<Token> {
 	public static void main(String[] args) {
 		if (args.length != 1) {
 			System.err.println("Usage: java Scanner <file>");
-			
+
 			System.exit(1);
 		}
 
 		String fileName = args[0];
 		Path filePath = Paths.get(fileName);
 		String source;
-		
+
 		try {
 			source = Files.readString(filePath);
 		} catch (IOException e) {
@@ -236,13 +238,15 @@ public class Scanner implements Iterator<Token> {
 
 		// Create a Scanner and scan the tokens
 		Scanner scanner = new Scanner(source);
-		List<Token> tokens = scanner.scan();
+		TokenList tokens = scanner.scan();
 
 		// Print tokens grouped by lines
 		int currentLine = -1;
 		StringBuilder lineBuffer = new StringBuilder();
 
-		for (Token token : tokens) {
+		for (int i = 0; i < tokens.size(); i++) {
+			Token token = tokens.get(i);
+
 			// Check if we're starting a new line
 			if (token.line() != currentLine) {
 				// Print the buffered line if moving to a new line

@@ -1,25 +1,30 @@
-package ast;
+package ast.stmt;
 
 import java.util.List;
+
+import org.objectweb.asm.MethodVisitor;
 
 import scanner.Token;
 
 public class ASTStmtBlock extends ASTStatement {
-	private final List<ASTStatement> statements; // The list of statements in the block
+	private final List<ASTStatement> statements;
 
-	// Constructor
-	public ASTStmtBlock(Token token, List<ASTStatement> statements) {
-		super(token);
+	public ASTStmtBlock(Token startToken, List<ASTStatement> statements) {
+		super(startToken);
 
 		this.statements = statements;
 	}
 
-	// Accessor
 	public List<ASTStatement> statements() {
 		return statements;
 	}
 
-	// String representation for debugging
+	@Override
+	public void toBytecode(MethodVisitor mv) {
+		for (ASTStatement statement : statements)
+			statement.toBytecode(mv);
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

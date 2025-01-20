@@ -1,12 +1,13 @@
 package ast;
 
+import ast.expr.ASTExpression;
 import scanner.Token;
 
 public class ASTArgument extends ASTNode {
 	private final ASTExpression expression;
 
-	public ASTArgument(Token token, ASTExpression expression) {
-		super(token);
+	public ASTArgument(Token startToken, ASTExpression expression) {
+		super(startToken);
 
 		this.expression = expression;
 	}

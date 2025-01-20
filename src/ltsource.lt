@@ -5,7 +5,7 @@ void foo() {
   return;
 }
 
-int bar(string s) {
-  return 99;
+int bar() {
+  return x;
 }
 

@@ -1,23 +1,22 @@
 package ast;
 
+import ast.expr.ASTExpression;
 import common.LTType;
 import scanner.Token;
 
 public class ASTField extends ASTNode {
-	private final LTType type; // The data type of the field
-	private final String name; // The name of the field
-	private final ASTExpression initializer; // Optional initializer for the field
+	private final LTType type;
+	private final String name;
+	private final ASTExpression initializer;
 
-	// Constructor
-	public ASTField(Token typeToken, Token nameToken, ASTExpression initializer) {
-		super(typeToken);
+	public ASTField(Token startToken, Token nameToken, ASTExpression initializer) {
+		super(startToken);
 
-		this.type = typeToken.type().toLTType();
+		this.type = startToken.type().toLTType();
 		this.name = nameToken.lexeme();
 		this.initializer = initializer;
 	}
 
-	// Accessors
 	public LTType type() {
 		return type;
 	}
@@ -30,7 +29,6 @@ public class ASTField extends ASTNode {
 		return initializer;
 	}
 
-	// String representation for debugging
 	@Override
 	public String toString() {
 		return String.format("ASTField(type=%s, name=%s, initializer=%s", type, name, initializer);

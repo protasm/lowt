@@ -7,10 +7,10 @@ public class ASTParameter extends ASTNode {
 	private final LTType type;
 	private final String name;
 
-	public ASTParameter(Token typeToken, Token nameToken) {
-		super(typeToken);
+	public ASTParameter(Token startToken, Token nameToken) {
+		super(startToken);
 
-		this.type = typeToken.type().toLTType();
+		this.type = startToken.type().toLTType();
 		this.name = nameToken.lexeme();
 	}
 
