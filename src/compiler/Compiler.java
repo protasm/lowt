@@ -14,7 +14,7 @@ import ast.ASTMethod;
 import ast.ASTObject;
 import ast.expr.ASTExpression;
 import parser.Parser;
-import scanner.Scanner;
+import scanner.ScannerOld;
 import scanner.TokenList;
 
 public class Compiler {
@@ -125,7 +125,7 @@ public class Compiler {
 		try {
 			String source = Files.readString(filePath);
 
-			Scanner scanner = new Scanner(source);
+			ScannerOld scanner = new ScannerOld(source);
 			TokenList tokens = scanner.scan();
 
 			Parser parser = new Parser(prefix, tokens);

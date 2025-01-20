@@ -192,7 +192,7 @@ public class Parser {
 		try {
 			source = Files.readString(filePath);
 
-			Scanner scanner = new Scanner(source);
+			ScannerOld scanner = new ScannerOld(source);
 			TokenList tokens = scanner.scan();
 
 			Parser parser = new Parser(fileName, tokens);

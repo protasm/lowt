@@ -1,271 +1,357 @@
 package scanner;
 
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_BANG;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_BANG_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_COLON;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_COMMA;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_DBL_AMP;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_DBL_PIPE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_ELSE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_EOF;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_EQUAL_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_ERROR;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_FALSE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_FOR;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_GREATER;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_GREATER_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_IDENTIFIER;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_IF;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_INHERIT;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_INVOKE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_LEFT_BRACE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_LEFT_BRACKET;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_LEFT_PAREN;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_LESS;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_LESS_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_MINUS;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_MINUS_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_MINUS_MINUS;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_NIL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_NUM_FLOAT;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_NUM_INT;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_PLUS;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_PLUS_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_PLUS_PLUS;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_RETURN;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_RIGHT_BRACE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_RIGHT_BRACKET;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_RIGHT_PAREN;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_SEMICOLON;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_SLASH;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_SLASH_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_STAR;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_STAR_EQUAL;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_STRING;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_SUPER;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_TRUE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_TYPE;
+import static io.github.protasm.lpc2j.scanner.TokenType.TOKEN_WHILE;
+
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class Scanner implements Iterator<Token> {
-	private final String source;
-	private final TokenList tokens;
-	private int start = 0; // Start of the current lexeme
-	private int current = 0; // Current position in the source string
-	private int line = 1; // Current line in the source string
+import org.anarres.cpp.CppReader;
+import org.anarres.cpp.Preprocessor;
+import org.anarres.cpp.StringLexerSource;
 
-	// Constructor
-	public Scanner(String source) {
-		this.source = source;
-		this.tokens = new TokenList();
-	}
+public class Scanner {
+    private static final char EOL = '\n';
+    private static final Map<String, TokenType> lpcTypes;
+    private static final Map<String, TokenType> reservedWords;
+    private static final Map<Character, TokenType> oneCharLexemes;
 
-	// Main entry point to scan all tokens
-	public TokenList scan() {
-		while (!isAtEnd()) {
-			start = current;
+    private ScannableSource ss;
 
-			scanToken();
+    static {
+	lpcTypes = new HashMap<>() {
+	    private static final long serialVersionUID = 1L;
+
+	    {
+		put("int", TOKEN_TYPE);
+		put("float", TOKEN_TYPE);
+		put("mapping", TOKEN_TYPE);
+		put("mixed", TOKEN_TYPE);
+		put("object", TOKEN_TYPE);
+		put("status", TOKEN_TYPE);
+		put("string", TOKEN_TYPE);
+		put("void", TOKEN_TYPE);
+	    }
+	};
+
+	reservedWords = new HashMap<>() {
+	    private static final long serialVersionUID = 1L;
+
+	    {
+		put("else", TOKEN_ELSE);
+		put("false", TOKEN_FALSE);
+		put("for", TOKEN_FOR);
+		put("if", TOKEN_IF);
+		put("inherit", TOKEN_INHERIT);
+		put("nil", TOKEN_NIL);
+		put("return", TOKEN_RETURN);
+		put("true", TOKEN_TRUE);
+		put("while", TOKEN_WHILE);
+	    }
+	};
+
+	oneCharLexemes = new HashMap<>() {
+	    private static final long serialVersionUID = 1L;
+
+	    {
+		put('(', TOKEN_LEFT_PAREN);
+		put(')', TOKEN_RIGHT_PAREN);
+		put('{', TOKEN_LEFT_BRACE);
+		put('}', TOKEN_RIGHT_BRACE);
+		put('[', TOKEN_LEFT_BRACKET);
+		put(']', TOKEN_RIGHT_BRACKET);
+		put(',', TOKEN_COMMA);
+		put(';', TOKEN_SEMICOLON);
+	    }
+	};
+    }
+
+    public Scanner(String source, String sysInclPath, String quoteInclPath) {
+	try (Preprocessor pp = new Preprocessor()) {
+	    pp.addInput(new StringLexerSource(source, true));
+	    pp.getSystemIncludePath().add(".");
+
+	    List<String> systemPaths = new ArrayList<>();
+	    systemPaths.add(sysInclPath);
+	    pp.setSystemIncludePath(systemPaths);
+
+	    List<String> quotePaths = new ArrayList<>();
+	    quotePaths.add(quoteInclPath);
+	    pp.setQuoteIncludePath(quotePaths);
+
+	    try (CppReader reader = new CppReader(pp)) {
+		StringBuilder output = new StringBuilder();
+
+		int ch;
+
+		while ((ch = reader.read()) != -1) {
+		    output.append((char) ch);
 		}
 
-		tokens.add(new Token(TokenType.T_EOF, "", null, line, current));
+		ss = new ScannableSource(output.toString());
+	    }
+	} catch (IOException e) {
+	    e.printStackTrace();
+	}
+    }
 
-		return tokens;
+    public List<Token> scan() {
+	List<Token> tokens = new ArrayList<>();
+
+	Token token;
+
+	do {
+	    token = lexToken();
+
+	    if (token != null) {
+		tokens.add(token);
+	    }
+	} while (token == null || token.type() != TOKEN_EOF);
+
+	return tokens;
+    }
+
+    private Token lexToken() {
+	if (ss.atEnd())
+	    return new Token(TOKEN_EOF, "", null, ss.line());
+
+	ss.syncTailHead();
+
+	char c = ss.consumeOneChar();
+
+	if (oneCharLexemes.containsKey(c))
+	    return makeToken(oneCharLexemes.get(c));
+
+	if (isDigit(c))
+	    return number();
+
+	if (isAlpha(c))
+	    return identifier();
+
+	switch (c) {
+	case EOL:
+	    return null;
+	case '"':
+	    return string();
+	case '&':
+	    if (ss.match('&'))
+		return makeToken(TOKEN_DBL_AMP);
+	    else
+		return unexpectedChar(c);
+	case '|':
+	    if (ss.match('|'))
+		return makeToken(TOKEN_DBL_PIPE);
+	    else
+		return unexpectedChar(c);
+	case ':':
+	    if (ss.match(':'))
+		return makeToken(TOKEN_SUPER);
+	    else
+		return makeToken(TOKEN_COLON);
+	case '-':
+	    if (ss.match('-'))
+		return makeToken(TOKEN_MINUS_MINUS);
+	    else if (ss.match('='))
+		return makeToken(TOKEN_MINUS_EQUAL);
+	    else if (ss.match('>'))
+		return makeToken(TOKEN_INVOKE);
+	    else
+		return makeToken(TOKEN_MINUS);
+	case '+':
+	    if (ss.match('+'))
+		return makeToken(TOKEN_PLUS_PLUS);
+	    else if (ss.match('='))
+		return makeToken(TOKEN_PLUS_EQUAL);
+	    else
+		return makeToken(TOKEN_PLUS);
+	case '!':
+	    return makeToken(ss.match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+	case '=':
+	    return makeToken(ss.match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+	case '<':
+	    return makeToken(ss.match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+	case '>':
+	    return makeToken(ss.match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+	case '/':
+	    if (ss.match('/'))
+		return lineComment();
+	    else if (ss.match('*'))
+		return blockComment();
+	    else if (ss.match('='))
+		return makeToken(TOKEN_SLASH_EQUAL);
+	    else
+		return makeToken(TOKEN_SLASH);
+	case '*':
+	    return makeToken(ss.match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR);
+	case ' ':
+	case '\r':
+	case '\t':
+	    while (isWhitespace(ss.peek()))
+		ss.advance();
+
+	    return null;
+	default:
+	    return unexpectedChar(c);
+	}
+    }
+
+    private Token lineComment() {
+	ss.advanceTo(EOL);
+
+	return null;
+    }
+
+    private Token blockComment() {
+	while (!ss.atEnd()) {
+	    ss.advanceTo('*');
+
+	    if (ss.peekPrev() == '/') {
+		return errorToken("Nested block comment");
+	    }
+
+	    ss.advance();
+
+	    if (ss.match('/')) {
+		return null;
+	    }
 	}
 
-	// Iterator interface: Returns true if there are more tokens
-	@Override
-	public boolean hasNext() {
-		return current < tokens.size();
+	return errorToken("Unterminated block comment.");
+    }
+
+    private Token identifier() {
+	while (isAlphaNumeric(ss.peek())) {
+	    ss.advance();
 	}
 
-	// Iterator interface: Returns the next token
-	@Override
-	public Token next() {
-		if (!hasNext()) {
-			throw new IllegalStateException("No more tokens");
-		}
-		return tokens.get(current++);
+	String str = ss.read();
+
+	TokenType type = lpcTypes.get(str);
+
+	if (type == null) {
+
+	    type = reservedWords.get(str);
 	}
 
-	// Helper: Scan a single token
-	private void scanToken() {
-		char c = advance();
+	if (type == null) {
 
-		switch (c) {
-			case '+':
-				addToken(TokenType.T_PLUS);
-				break;
-			case '-':
-				addToken(TokenType.T_MINUS);
-				break;
-			case '*':
-				addToken(TokenType.T_MULTIPLY);
-				break;
-			case '/':
-				addToken(TokenType.T_DIVIDE);
-				break;
-			case '(':
-				addToken(TokenType.T_LEFT_PAREN);
-				break;
-			case ')':
-				addToken(TokenType.T_RIGHT_PAREN);
-				break;
-			case '{':
-				addToken(TokenType.T_LEFT_BRACE);
-				break;
-			case '}':
-				addToken(TokenType.T_RIGHT_BRACE);
-				break;
-			case ';':
-				addToken(TokenType.T_SEMICOLON);
-				break;
-			case ',':
-				addToken(TokenType.T_COMMA);
-				break;
-			case '"':
-				scanString(); // Handle string literal
-				break;
-			case '=':
-				addToken(TokenType.T_EQUALS);
-				break;
-			case ' ':
-			case '\r':
-			case '\t':
-				// Ignore whitespace
-				break;
-			case '\n':
-				line++; // Handle newlines for line tracking
-				break;
-			default:
-				if (isDigit(c)) {
-					scanNumber();
-				} else if (isAlpha(c)) {
-					scanIdentifier();
-				} else {
-					// Handle unexpected characters
-					throw new IllegalArgumentException("Unexpected character: " + c);
-				}
-		}
+	    type = TOKEN_IDENTIFIER;
 	}
 
-	// Advance and return the current character
-	private char advance() {
-		return source.charAt(current++);
+	return makeToken(type);
+    }
+
+    private Token number() {
+	boolean isFloat = false;
+
+	while (isDigit(ss.peek())) {
+	    ss.advance();
 	}
 
-	// Add a token without a literal value
-	private void addToken(TokenType type) {
-		addToken(type, null);
+	if (ss.peek() == '.' && isDigit(ss.peekNext())) {
+	    isFloat = true;
+
+	    ss.advance();
+
+	    while (isDigit(ss.peek())) {
+		ss.advance();
+	    }
 	}
 
-	// Add a token with a literal value
-	private void addToken(TokenType type, Object literal) {
-		String lexeme = source.substring(start, current);
-		tokens.add(new Token(type, lexeme, literal, line, start));
+	if (isFloat) {
+	    return makeToken(TOKEN_NUM_FLOAT, Float.parseFloat(ss.read()));
+	} else {
+	    return makeToken(TOKEN_NUM_INT, Integer.parseInt(ss.read()));
+	}
+    }
+
+    private Token string() {
+	if (!ss.advanceTo('"')) {
+	    return errorToken("Unterminated string.");
 	}
 
-	// Scan a number literal
-	private void scanNumber() {
-		while (isDigit(peek())) {
-			advance();
-		}
+	ss.advance();
 
-		// Add the number token
-		String lexeme = source.substring(start, current);
-		addToken(TokenType.T_INTEGER_LITERAL, Integer.parseInt(lexeme));
-	}
+	return makeToken(TOKEN_STRING, ss.readTrimmed());
+    }
 
-	// Scan an identifier or keyword
-	private void scanIdentifier() {
-		while (isAlphaNumeric(peek())) {
-			advance();
-		}
+    private boolean isWhitespace(char c) {
+	return (c == ' ') || (c == '\r') || (c == '\t');
+    }
 
-		String lexeme = source.substring(start, current);
-		TokenType type = getKeywordType(lexeme);
-		addToken(type != null ? type : TokenType.T_IDENTIFIER);
-	}
+    private boolean isAlpha(char c) {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    }
 
-	private void scanString() {
-		StringBuilder value = new StringBuilder();
+    private boolean isAlphaNumeric(char c) {
+	return isAlpha(c) || isDigit(c);
+    }
 
-		// Collect characters until the closing quote or end of file
-		while (!isAtEnd() && peek() != '"') {
-			if (peek() == '\n') {
-				line++; // Handle multi-line strings by tracking newlines
-			}
+    private boolean isDigit(char c) {
+	return c >= '0' && c <= '9';
+    }
 
-			value.append(advance());
-		}
+    private Token unexpectedChar(char c) {
+	return errorToken("Unexpected character: '" + c + "'.");
+    }
 
-		// Check for a closing quote
-		if (isAtEnd()) {
-			throw new IllegalArgumentException("Unterminated string literal at line " + line);
-		}
+    private Token errorToken(String message) {
+	return new Token(TOKEN_ERROR, message, null, ss.line());
+    }
 
-		// Consume the closing quote
-		advance();
+    private Token makeToken(TokenType type) {
+	return makeToken(type, null);
+    }
 
-		// Add the string token
-		addToken(TokenType.T_STRING_LITERAL, value.toString());
-	}
-
-	// Get token type for a keyword
-	private TokenType getKeywordType(String lexeme) {
-		switch (lexeme) {
-			case "int":
-				return TokenType.T_INT;
-			case "string":
-				return TokenType.T_STRING;
-			case "object":
-				return TokenType.T_OBJECT;
-			case "void":
-				return TokenType.T_VOID;
-			case "inherit":
-				return TokenType.T_INHERIT;
-			case "null":
-				return TokenType.T_NULL;
-			case "return":
-				return TokenType.T_RETURN;
-			default:
-				return null;
-		}
-	}
-
-	// Peek at the current character without advancing
-	private char peek() {
-		return isAtEnd() ? '\0' : source.charAt(current);
-	}
-
-	// Check if a character is a digit
-	private boolean isDigit(char c) {
-		return c >= '0' && c <= '9';
-	}
-
-	// Check if a character is alphabetic
-	private boolean isAlpha(char c) {
-		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-	}
-
-	// Check if a character is alphanumeric
-	private boolean isAlphaNumeric(char c) {
-		return isAlpha(c) || isDigit(c);
-	}
-
-	// Check if we've reached the end of the source
-	private boolean isAtEnd() {
-		return current >= source.length();
-	}
-
-	public static void main(String[] args) {
-		if (args.length != 1) {
-			System.err.println("Usage: java Scanner <file>");
-
-			System.exit(1);
-		}
-
-		String fileName = args[0];
-		Path filePath = Paths.get(fileName);
-		String source;
-
-		try {
-			source = Files.readString(filePath);
-		} catch (IOException e) {
-			System.err.println("Error: Unable to locate or read file '" + fileName + "'");
-			System.exit(1);
-			return; // Unreachable, but included for clarity
-		}
-
-		// Create a Scanner and scan the tokens
-		Scanner scanner = new Scanner(source);
-		TokenList tokens = scanner.scan();
-
-		// Print tokens grouped by lines
-		int currentLine = -1;
-		StringBuilder lineBuffer = new StringBuilder();
-
-		for (int i = 0; i < tokens.size(); i++) {
-			Token token = tokens.get(i);
-
-			// Check if we're starting a new line
-			if (token.line() != currentLine) {
-				// Print the buffered line if moving to a new line
-				if (lineBuffer.length() > 0) {
-					System.out.println(lineBuffer.toString());
-					lineBuffer.setLength(0); // Clear the buffer
-				}
-
-				// Update current line
-				currentLine = token.line();
-			}
-
-			// Append the token to the current line
-			lineBuffer.append(token).append(" ");
-		}
-
-		// Print the final line if there's anything left in the buffer
-		if (lineBuffer.length() > 0) {
-			System.out.println(lineBuffer.toString());
-		}
-	}
+    private Token makeToken(TokenType type, Object literal) {
+	return new Token(type, ss.read(), literal, ss.line());
+    }
 }
